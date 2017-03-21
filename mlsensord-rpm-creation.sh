@@ -1,12 +1,12 @@
 #/bin/sh
 # 
-# ce script permet de creer un RPM pour MLSensor
+# ce script permet de creer un RPM pour MLSensord
 #
 
 export ARCH=`uname -m`
 export generationdir=$(basename $(mktemp -d -p .))
-export mlsensor_path=usr/local
-export MLSensorSPECfile="MLSensor.spec"
+export mlsensord_path=usr/local
+export MLSensordSPECfile="MLSensord.spec"
 export RPMBUILDDIR="$HOME/rpmbuild"
 
 # URL where to download the MLSensor
@@ -33,17 +33,17 @@ OLD_PWD=$PWD
 cd $generationdir
 
 # download the MLSensor soft
-mkdir -p $mlsensor_path
+mkdir -p $mlsensord_path
 ## first download the MLSensor software
 rm -rf /tmp/MLSensor.tgz
 echo "Downloading $url_file_ml_tgz ..."
 /usr/bin/curl -fsSL -o /tmp/MLSensor.tgz $url_file_ml_tgz || { echo "Could not download MLSensor.tgz" && exit 1; }
 echo "Unarchiving MLSensor.tgz ..."
-(cd $mlsensor_path ; tar xzf /tmp/MLSensor.tgz)
+(cd $mlsensord_path ; tar xzf /tmp/MLSensor.tgz)
 
 echo "Downloading $url_file_deploy_mlsensor ..."
-/usr/bin/curl -fsSL -o $mlsensor_path/MLSensor/deploy_mlsensor $url_file_deploy_mlsensor
-chmod +x $mlsensor_path/MLSensor/deploy_mlsensor
+/usr/bin/curl -fsSL -o $mlsensord_path/MLSensor/deploy_mlsensor $url_file_deploy_mlsensor
+chmod +x $mlsensord_path/MLSensor/deploy_mlsensor
 
 echo "Downloading the sysconfig config file ..."
 mkdir -p etc/sysconfig
@@ -68,27 +68,27 @@ if [ ! -e $mlsensord_sysinit_script ]; then
 fi
 chmod +x $mlsensord_sysinit_script
 
-tmpMLsensor_VERS=$(${mlsensor_path}/MLSensor/bin/MLSensor version)
+tmpMLsensor_VERS=$(${mlsensord_path}/MLSensor/bin/MLSensor version)
 export MLsensor_VERS=$(echo $tmpMLsensor_VERS|sed -e "s/-.*//")
 export MLsensor_VERS_UPDATE=$(echo $tmpMLsensor_VERS|sed -e "s/.*-//")
 
 mkdir -p $RPMBUILDDIR/SOURCES
 
-echo "Building $RPMBUILDDIR/SOURCES/MLSensor.tar.gz ..."
-rm -f $RPMBUILDDIR/SOURCES/MLSensor.tar.gz
-tar czf $RPMBUILDDIR/SOURCES/MLSensor.tar.gz *
+echo "Building $RPMBUILDDIR/SOURCES/MLSensord.tar.gz ..."
+rm -f $RPMBUILDDIR/SOURCES/MLSensord.tar.gz
+tar czf $RPMBUILDDIR/SOURCES/MLSensord.tar.gz *
 
 cd $OLD_PWD
 
 echo "Spec file creation ..."
-cat > $MLSensorSPECfile << EOF_SPEC
+cat > $MLSensordSPECfile << EOF_SPEC
 Summary: MonaLisa Sensor for ALICE xrootd storage
-Name: MLSensor
+Name: MLSensord
 Version: $MLsensor_VERS
 Release: $MLsensor_VERS_UPDATE
 License: LGPLv3+
 Group: Applications/Internet
-Source: MLSensor.tar.gz
+Source: MLSensord.tar.gz
 URL: http://monalisa.cern.ch/MLSensor/MLSensor.tgz
 Packager: The LHC ALICE Project
 AutoReqProv: no
@@ -98,7 +98,7 @@ Requires: java >= 1:1.6.0, xrootd-server >= 1:4.0.0
 This is the MonALISA sensor for ALICE xrootd storage
 
 %prep
-%setup -c MLSensor
+%setup -c MLSensord
 
 %install
 %__cp -a . "\${RPM_BUILD_ROOT-/}"
@@ -108,47 +108,34 @@ This is the MonALISA sensor for ALICE xrootd storage
 
 %pre
 # pre-install
-# 
-## if MLSensor in place, try to stop it
-#MLSENSOR_FOUND_HOME=\$(ps -C java -o args= | awk '/MLSENSOR_HOME/ { for ( x = 1; x <= NF; x++ ) { if (\$x ~ "-DMLSENSOR_HOME"){ n=split(\$x,home,"="); print home[n];}}}')
-#[[ -n "\${MLSENSOR_FOUND_HOME}" ]] && service MLSensor stop
 
 %post
 # post-install
 # 
 # Add the MLSensor service
-chkconfig --add MLSensor
+chkconfig --add MLSensord
 
 # Turn on the MLSensor service
-chkconfig MLSensor on
+chkconfig MLSensord on
 
 # TODO : first of all, need to check if xrootd server is already running
 
-grep "cluster.name=MLSensor" /${mlsensor_path}/MLSensor/etc/mlsensor.properties > /dev/null
+grep "cluster.name=MLSensor" /${mlsensord_path}/MLSensor/etc/mlsensor.properties > /dev/null
 if [[ $? == 0 ]]; then
 	echo "Before starting MLSensor, you need to configure :"
 	echo "  - the file /etc/sysconfig/mlsensor"
-	echo "  - /${mlsensor_path}/MLSensor/etc/mlsensor.properties"
-	echo "  - /${mlsensor_path}/MLSensor/etc/mlsensor_env"
+	echo "  - /${mlsensord_path}/MLSensor/etc/mlsensor.properties"
+	echo "  - /${mlsensord_path}/MLSensor/etc/mlsensor_env"
 	echo 
-	echo "You can use the /${mlsensor_path}/MLSensor/deploy_mlsensor script"
+	echo "You can use the /${mlsensord_path}/MLSensor/deploy_mlsensor script"
 	
 else
 	# If MLSensor isn't running, start it
-	service MLSensor start
+	service MLSensord start
 fi
 
 %preun
 # pre-uninstall
-# 
-# If we're uninstalling the last copy of MLSensor...
-# if [ $1 -eq 0 ] ; then
-#    MLSENSOR_FOUND_HOME=\$(ps -C java -o args= | awk '/MLSENSOR_HOME/ { for ( x = 1; x <= NF; x++ ) { if (\$x ~ "-DMLSENSOR_HOME"){ n=split(\$x,home,"="); print home[n];}}}')
-#    [[ -n "\${MLSENSOR_FOUND_HOME}" ]] && service MLSensor stop
-# 
-#   # Remove the MLSensor service
-#   chkconfig --del MLSensor
-# fi
 service MLSensor stop
 chkconfig --del MLSensor
 
@@ -161,7 +148,7 @@ echo "MLSensor removed !"
 EOF_SPEC
 
 
-tar tzvf $RPMBUILDDIR/SOURCES/MLSensor.tar.gz | while read line
+tar tzvf $RPMBUILDDIR/SOURCES/MLSensord.tar.gz | while read line
 do
 	# cas speciaux
 	# %readme /samples/util/README      
@@ -183,24 +170,24 @@ do
 	else
 		# si c'est un fichier
 		case "$fichier" in
-			etc/rc.d/init.d/MLSensor |	etc/sysconfig/mlsensor | */MLSensor/etc/mlsensor.properties |	*/MLSensor/etc/mlsensor_env )
-				echo "%config(noreplace) /$fichier" >> $MLSensorSPECfile
+			$mlsensord_sysinit_script |	$mlsensord_sysconfig_script | */MLSensor/etc/mlsensor.properties |	*/MLSensor/etc/mlsensor_env )
+				echo "%config(noreplace) /$fichier" >> $MLSensordSPECfile
 				;;
-			* ) echo "/$fichier" >> $MLSensorSPECfile ;;
+			* ) echo "/$fichier" >> $MLSensordSPECfile ;;
 		esac
 	fi
 done
 
-echo "" >> $MLSensorSPECfile
+echo "" >> $MLSensordSPECfile
 
-rm -f $RPMBUILDDIR/RPMS/$ARCH/MLSensor-${tmpMLsensor_VERS}.$ARCH.rpm
+rm -f $RPMBUILDDIR/RPMS/$ARCH/MLSensord-${tmpMLsensor_VERS}.$ARCH.rpm
 echo "RPM file creation ..."
-rpmbuild -bb --quiet $MLSensorSPECfile
+rpmbuild -bb --quiet $MLSensordSPECfile
 
-rm -rf $generationdir $MLSensorSPECfile
+rm -rf $generationdir $MLSensordSPECfile
 
-if [ -f $RPMBUILDDIR/RPMS/$ARCH/MLSensor-${tmpMLsensor_VERS}.$ARCH.rpm ]; then
-	echo "The RPM file is $RPMBUILDDIR/RPMS/$ARCH/MLSensor-${tmpMLsensor_VERS}.$ARCH.rpm"
+if [ -f $RPMBUILDDIR/RPMS/$ARCH/MLSensord-${tmpMLsensor_VERS}.$ARCH.rpm ]; then
+	echo "The RPM file is $RPMBUILDDIR/RPMS/$ARCH/MLSensord-${tmpMLsensor_VERS}.$ARCH.rpm"
 else
 	echo "Error, the RPM file is not built !"
 fi
