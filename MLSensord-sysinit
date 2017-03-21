@@ -1,0 +1,108 @@
+#!/bin/sh
+# MLSensor         Start/Stop MonALISA sensor
+#
+# chkconfig: 345 85 15
+#  
+# description: MonaLisa Sensor for ALICE xrootd storage
+
+config=/etc/sysconfig/mlsensor
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+if [ -e $config ]; then
+  . $config
+else
+  echo "$config not found";
+  exit 6
+fi
+
+RETVAL=0
+
+prog="MLSensor"
+exec=${MLSENSOR_HOME}/bin/${prog}
+
+check() {
+	if [ ! -x $exec ]; then
+	  failure
+	  echo "$exec not found !"
+	  exit 5
+	fi
+	
+        grep "cluster.name=MLSensor" ${MLSENSOR_HOME}/etc/mlsensor.properties > /dev/null
+	if [[ $? == 0 ]]; then
+	  failure 
+	  echo "MLSensor is not configured, see ${MLSENSOR_HOME}/etc/mlsensor.properties"
+	  exit 2
+	fi
+	if [ -d $MLSENSOR_HOME -a x"${MLSENSOR_USER}" != "x" ]; then
+	  chown -R ${MLSENSOR_USER}.${MLSENSOR_USER} $MLSENSOR_HOME
+	fi
+	
+}
+
+start() {
+    check
+    echo -n $"Starting $prog: "
+    daemon "su ${MLSENSOR_USER} $exec start"
+    RETVAL=$?
+    [ $RETVAL -eq 1 ] && failure
+    [ $RETVAL -eq 0 ] && success
+    echo
+    echo
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    daemon "su ${MLSENSOR_USER} $exec stop"
+    #if [ -n "`pidfileofproc $exec`" ] ; then
+    #    killproc $exec
+	#	RETVAL=3
+    #else
+    #    success $"Stopping $prog"
+    #fi
+    RETVAL=$?
+    [ $RETVAL -eq 1 ] && failure
+    [ $RETVAL -eq 0 ] && success
+    echo
+}
+
+restart() {
+    stop
+    start
+}
+
+status() {
+    echo -n $"Status $prog: "
+    su ${MLSENSOR_USER} $exec status
+    RETVAL=$?
+    [ $RETVAL -eq 1 ] && echo "Not running"
+    [ $RETVAL -eq 0 ] && echo "Running"
+    echo
+}
+
+
+case "$1" in
+start)
+	start
+	;;
+stop)
+	stop
+	;;
+restart)
+	restart
+	;;
+status)
+	status
+	RETVAL=$?
+	;;
+*)
+	echo $"Usage: $0 {start|stop|status|restart}"
+	RETVAL=2
+esac
+
+exit $RETVAL
+
+
+
+
