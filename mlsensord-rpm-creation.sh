@@ -48,7 +48,7 @@ chmod +x $mlsensord_path/MLSensor/deploy_mlsensor
 echo "Downloading the sysconfig config file ..."
 mkdir -p etc/sysconfig
 mlsensord_sysconfig_script=etc/sysconfig/mlsensord
-/usr/bin/curl -fsSLk -o $mlsensord_sysconfig_script https://www.ipnl.in2p3.fr/perso/pugnere/alice/mlsensord-sysconfig
+/usr/bin/curl -fsSLk -o $mlsensord_sysconfig_script https://raw.githubusercontent.com/pugnere/MLSensord/master/mlsensord-sysconfig
 #cp mlsensord-sysconfig $mlsensord_sysconfig_script
 if [ ! -e $mlsensord_sysconfig_script ]; then
 	echo "Problem : the file $mlsensord_sysconfig_script is not there."
@@ -59,7 +59,7 @@ chmod +x $mlsensord_sysconfig_script
 mkdir -p etc/rc.d/init.d
 echo "Downloading the sysinit file ..."
 mlsensord_sysinit_script=etc/rc.d/init.d/MLSensord
-/usr/bin/curl -fsSLk -o $mlsensord_sysinit_script  https://www.ipnl.in2p3.fr/perso/pugnere/alice/MLSensord-sysinit
+/usr/bin/curl -fsSLk -o $mlsensord_sysinit_script  https://raw.githubusercontent.com/pugnere/MLSensord/master/MLSensord-sysinit
 # curl -fsSLk https://raw.githubusercontent.com/adriansev/alicexrd/master/deploy_alicexrd 
 #cp MLSensord-sysinit $mlsensord_sysinit_script
 if [ ! -e $mlsensord_sysinit_script ]; then
